@@ -46,7 +46,7 @@ public class ExpenseTrackerIntegrationTest {
         userRepository = new UserRepository();
         expenseRepository = new ExpenseRepository();
         goalRepository = new GoalRepository(expenseRepository);
-        securityService = new SecurityService();
+        securityService = new SecurityService(userRepository);
         userController = new UserController(userRepository, securityService);
         expenseController = new ExpenseController(expenseRepository, securityService);
         goalController = new GoalController(goalRepository, securityService);
@@ -87,7 +87,7 @@ public class ExpenseTrackerIntegrationTest {
     body.setDate(LocalDate.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
 
         // Auth as the same user
-        securityService.setCurrentUserId(user.getId());
+        securityService.setCurrentUser(user.getId());
 
         // When
     ResponseEntity<Expense> response = expenseController.createExpense(body);
@@ -248,7 +248,7 @@ public class ExpenseTrackerIntegrationTest {
     }
 
     private Expense createTestExpense(String userId, String description, String amount, String category) {
-        securityService.setCurrentUserId(userId);
+        securityService.setCurrentUser(userId);
 
         ExpenseRequest body = new ExpenseRequest();
         body.setUserId(userId);

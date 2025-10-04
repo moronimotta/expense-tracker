@@ -14,7 +14,6 @@ public class SuccessResponseAdvice implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        // Apply to all controller responses in the interfaces package
         return true;
     }
 
@@ -26,17 +25,14 @@ public class SuccessResponseAdvice implements ResponseBodyAdvice<Object> {
                                   ServerHttpRequest request,
                                   ServerHttpResponse response) {
 
-        // Don't wrap known error bodies
         if (body instanceof ApiError) {
             return body;
         }
 
-        // If already wrapped, return as-is
         if (body instanceof ApiResponse) {
             return body;
         }
 
-        // Only wrap for 2xx
         int status = 200;
         if (response instanceof ServletServerHttpResponse servletResp) {
             status = servletResp.getServletResponse().getStatus();

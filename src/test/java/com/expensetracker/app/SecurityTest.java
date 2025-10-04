@@ -32,7 +32,7 @@ public class SecurityTest {
     void setUp() {
         userRepository = new UserRepository();
         expenseRepository = new ExpenseRepository();
-        securityService = new SecurityService();
+        securityService = new SecurityService(userRepository);
         expenseController = new ExpenseController(expenseRepository, securityService);
     }
 
@@ -42,7 +42,7 @@ public class SecurityTest {
         User user1 = createUser("User1", "user1sec@test.com");
         User user2 = createUser("User2", "user2sec@test.com");
 
-        securityService.setCurrentUserId(user1.getId());
+        securityService.setCurrentUser(user1.getId());
 
         ExpenseRequest body = new ExpenseRequest();
         body.setUserId(user2.getId()); // Different user!
@@ -62,7 +62,7 @@ public class SecurityTest {
     void testSameUserExpenseCreationAllowed() throws Exception {
         User user = createUser("Test User", "testsame@test.com");
 
-        securityService.setCurrentUserId(user.getId());
+        securityService.setCurrentUser(user.getId());
 
     ExpenseRequest body = new ExpenseRequest();
     body.setUserId(user.getId()); // Same user

@@ -134,3 +134,6 @@ javadoc/
 # Add any project-specific files or directories here
 # secrets/
 # private/
+
+ModuleReport.md
+ModuleReport.pdf

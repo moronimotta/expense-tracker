@@ -19,7 +19,7 @@ public class SecurityServiceTest {
     @BeforeEach
     void setup() {
         userRepository = Mockito.mock(UserRepository.class);
-        securityService = new SecurityService();
+        securityService = new SecurityService(userRepository);
         // inject mock (field is package-private via reflection if needed)
         try {
             java.lang.reflect.Field f = SecurityService.class.getDeclaredField("userRepository");
@@ -42,7 +42,7 @@ public class SecurityServiceTest {
     @Test
     void requireAdmin_allowsAdmin() throws Exception {
         String adminId = "admin-1";
-        securityService.setCurrentUserId(adminId);
+        securityService.setCurrentUser(adminId);
         when(userRepository.findById(adminId)).thenReturn(buildUser(adminId, UserRole.ADMIN));
         assertDoesNotThrow(() -> securityService.requireAdmin());
     }
@@ -50,7 +50,7 @@ public class SecurityServiceTest {
     @Test
     void requireAdmin_deniesNonAdmin() throws Exception {
         String userId = "user-1";
-        securityService.setCurrentUserId(userId);
+        securityService.setCurrentUser(userId);
         when(userRepository.findById(userId)).thenReturn(buildUser(userId, UserRole.USER));
         SecurityException ex = assertThrows(SecurityException.class, () -> securityService.requireAdmin());
         assertTrue(ex.getMessage().toLowerCase().contains("admin"));
@@ -59,7 +59,7 @@ public class SecurityServiceTest {
     @Test
     void validateUserAccess_allowsSelf() throws Exception {
         String userId = "u1";
-        securityService.setCurrentUserId(userId);
+        securityService.setCurrentUser(userId);
         when(userRepository.findById(userId)).thenReturn(buildUser(userId, UserRole.USER));
         assertDoesNotThrow(() -> securityService.validateUserAccess(userId));
     }
@@ -67,7 +67,7 @@ public class SecurityServiceTest {
     @Test
     void validateUserAccess_deniesOtherUserWhenNotAdmin() throws Exception {
         String userId = "u1";
-        securityService.setCurrentUserId(userId);
+        securityService.setCurrentUser(userId);
         when(userRepository.findById(userId)).thenReturn(buildUser(userId, UserRole.USER));
         SecurityException ex = assertThrows(SecurityException.class, () -> securityService.validateUserAccess("other"));
         assertTrue(ex.getMessage().toLowerCase().contains("access denied"));
@@ -76,7 +76,7 @@ public class SecurityServiceTest {
     @Test
     void validateUserAccess_adminCanAccessOthers() throws Exception {
         String adminId = "admin-2";
-        securityService.setCurrentUserId(adminId);
+        securityService.setCurrentUser(adminId);
         when(userRepository.findById(adminId)).thenReturn(buildUser(adminId, UserRole.ADMIN));
         assertDoesNotThrow(() -> securityService.validateUserAccess("someone-else"));
     }

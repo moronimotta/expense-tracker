@@ -134,7 +134,6 @@ public class GoalController {
         }
     }
 
-    // Overload for tests: accept Goal entity directly (no annotations/mapping)
     public ResponseEntity<Goal> createGoal(Goal goal) {
         try {
             if (goal == null) {
@@ -155,7 +154,7 @@ public class GoalController {
         }
     }
 
-    // PUT /goals/{id} (DTO with dates in MM/dd/yyyy, partial update)
+    // PUT /goals/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Goal> updateGoal(@PathVariable String id, @RequestBody GoalRequest request) {
         try {

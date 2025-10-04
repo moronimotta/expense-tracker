@@ -1,81 +1,69 @@
 package com.expensetracker.app.services;
 
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.expensetracker.app.repositories.UserRepository;
 import com.expensetracker.app.models.User;
 import com.expensetracker.app.models.enums.UserRole;
+import com.expensetracker.app.repositories.UserRepository;
+import org.springframework.stereotype.Service;
 
 @Service
 public class SecurityService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final ThreadLocal<String> currentUserId = new ThreadLocal<>();
 
-    // In a real application, this would get the current user from JWT token or session
-    private String currentUserId = null;
+    public SecurityService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
-    public void setCurrentUserId(String userId) {
-        this.currentUserId = userId;
+    // New methods for current user management
+    public void setCurrentUser(String userId) {
+        currentUserId.set(userId);
+    }
+
+    public void clearCurrentUser() {
+        currentUserId.remove();
     }
 
     public String getCurrentUserId() {
-        return currentUserId;
+        String userId = currentUserId.get();
+        if (userId == null) {
+            throw new SecurityException("No authenticated user");
+        }
+        return userId;
     }
 
     public User getCurrentUser() {
-        if (currentUserId == null) {
-            throw new SecurityException("No authenticated user");
-        }
+        String userId = getCurrentUserId();
         try {
-            User user = userRepository.findById(currentUserId);
+            User user = userRepository.findById(userId);
             if (user == null) {
-                throw new SecurityException("Current user not found");
+                throw new SecurityException("User not found: " + userId);
             }
             return user;
         } catch (Exception e) {
-            throw new SecurityException("Error retrieving current user: " + e.getMessage());
+            throw new SecurityException("Error fetching user: " + e.getMessage());
         }
     }
 
-    public boolean isCurrentUserAdmin() {
-        try {
-            User currentUser = getCurrentUser();
-            return currentUser.getRole() == UserRole.ADMIN;
-        } catch (SecurityException e) {
-            return false;
-        }
-    }
-
-    public boolean isAuthorized(String requestedUserId) {
-        if (currentUserId == null) {
-            throw new SecurityException("No authenticated user");
-        }
-        
-        // Admin can access any user's data
-        if (isCurrentUserAdmin()) {
-            return true;
-        }
-        
-        // Regular users can only access their own data
-        return currentUserId.equals(requestedUserId);
-    }
-
-    public void validateUserAccess(String requestedUserId) {
-        if (!isAuthorized(requestedUserId)) {
-            throw new SecurityException("Access denied: Cannot access resources for user " + requestedUserId);
-        }
-    }
-
+    // Updated existing methods
     public void requireAdmin() {
-        if (!isCurrentUserAdmin()) {
+        User user = getCurrentUser();
+        if (user.getRole() != UserRole.ADMIN) {
             throw new SecurityException("Access denied: Admin role required");
         }
     }
 
-    public void requireAuthentication() {
-        if (currentUserId == null) {
-            throw new SecurityException("Authentication required");
+    public void validateUserAccess(String targetUserId) {
+        User currentUser = getCurrentUser();
+        
+        // Admin can access anyone's data
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+        
+        // Regular users can only access their own data
+        if (!currentUser.getId().equals(targetUserId)) {
+            throw new SecurityException("Access denied: Cannot access other user's data");
         }
     }
 }
