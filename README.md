@@ -68,3 +68,16 @@ The application follows the **Model-View-Controller (MVC)** pattern with clear s
 - Study different types of architectures for Java projects
 
 - Use other frameworks to develop APIs
+
+## Deployment
+
+Docker
+- The project includes a multi-stage Dockerfile. Build the image and run the container, ensuring the host port you map to 8080 is free. The app reads the PORT env var and defaults to 8080.
+- Provide Firebase credentials via the GOOGLE_APPLICATION_CREDENTIALS env var as either:
+	- A file path (mounted/available inside the container), or
+	- Inline JSON string value with the service account content.
+
+Render
+- A render.yaml is included. Create a new Web Service on Render using the repository and choose Docker runtime.
+- Health check path: /actuator/health.
+- Add an environment variable or Secret File for GOOGLE_APPLICATION_CREDENTIALS (recommended as Secret File containing your service account JSON). No other build or start commands are needed due to the Dockerfile.

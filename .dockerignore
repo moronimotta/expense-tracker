@@ -1,0 +1,18 @@
+# Maven build output
+/target
+
+# IDE files
+/.idea
+/.vscode
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node / Frontend
+node_modules
+
+# Local credentials
+src/main/resources/firebase-service-account.json
+*.env

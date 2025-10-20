@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,11 +22,37 @@ public class FirebaseConfig {
     public void initialize() {
         try {
             System.out.println("Initializing Firebase...");
-            
             if (FirebaseApp.getApps().isEmpty()) {
-                // Try to load credentials from resources
+                // 1) Try GOOGLE_APPLICATION_CREDENTIALS env var
+                String gac = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+                if (gac != null && !gac.isBlank()) {
+                    try {
+                        InputStream credsStream;
+                        File f = new File(gac);
+                        if (f.exists()) {
+                            credsStream = new FileInputStream(f);
+                            System.out.println("Initializing Firebase using credentials file at: " + f.getAbsolutePath());
+                        } else {
+                            // Treat as inline JSON
+                            System.out.println("Initializing Firebase using inline credentials JSON from env var");
+                            credsStream = new ByteArrayInputStream(gac.getBytes());
+                        }
+
+                        try (InputStream serviceAccount = credsStream) {
+                            FirebaseOptions options = FirebaseOptions.builder()
+                                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                                    .build();
+                            FirebaseApp.initializeApp(options);
+                            System.out.println("Firebase initialized successfully from GOOGLE_APPLICATION_CREDENTIALS");
+                            return;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to init Firebase from GOOGLE_APPLICATION_CREDENTIALS: " + e.getMessage());
+                    }
+                }
+
+                // 2) Fallback to classpath resource for local development
                 ClassPathResource resource = new ClassPathResource(CREDENTIALS_FILE);
-                
                 if (resource.exists()) {
                     try (InputStream serviceAccount = resource.getInputStream()) {
                         FirebaseOptions options = FirebaseOptions.builder()
@@ -31,12 +60,11 @@ public class FirebaseConfig {
                                 .build();
 
                         FirebaseApp.initializeApp(options);
-                        System.out.println("Firebase initialized successfully with service account!");
+                        System.out.println("Firebase initialized successfully with service account from classpath!");
                     }
                 } else {
-                    System.err.println("Firebase credentials file not found: " + CREDENTIALS_FILE);
-                    System.err.println("Please add " + CREDENTIALS_FILE + " to src/main/resources/");
-                    System.err.println("Application will use in-memory storage instead.");
+                    System.err.println("Firebase credentials not provided. Set GOOGLE_APPLICATION_CREDENTIALS or add " + CREDENTIALS_FILE + " to resources.");
+                    System.err.println("Continuing without Firebase (using in-memory storage if applicable).");
                 }
             } else {
                 System.out.println("Firebase already initialized.");
